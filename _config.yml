@@ -1,0 +1,59 @@
+# Site settings
+title: Collatz Dynamic Bits Animation (manim)
+email: your-email@domain.com
+description: >
+  Python script that generates a mathematical animation
+  (manim) depicting the consolidation of seed bits.
+lang: en-US
+
+baseurl: "/collatz-colored-manim" # the subpath of your site, e.g. /blog/
+url: https://jpell19.github.io/collatz-colored-manim # the base hostname & protocol for your site
+git_address: https://github.com/jpell19/collatz-colored-manim
+git_edit_address: https://github.com/jpell19/collatz-colored-manim/blob/gh-pages
+
+# theme options from https://bootswatch.com/3/
+# comment out this to use default Bootstrap
+bootwatch: cyborg # cerulean cosmo custom cyborg darkly flatly journal lumen paper readable sandstone simplex slate solar spacelab superhero united yeti
+
+# Build settings
+markdown: kramdown
+highlighter: rouge
+# Plugins (previously gems:)
+plugins:
+  - jekyll-feed
+  - jekyll-redirect-from
+  - jekyll-seo-tag
+  - jekyll-sitemap
+
+exclude:
+  - Gemfile
+  - Gemfile.lock
+  - .idea/
+  - .gitignore
+  - README.md
+  - vendor
+timezone: Europe/Berlin
+defaults:
+- scope:
+    path: _posts
+    type: posts
+  values:
+    layout: post
+    sectionid: blog
+
+- scope:
+    path: _docs
+    type: docs
+  values:
+    layout: docs
+    sectionid: docs
+    seo:
+      type: "WebPage"
+
+collections:
+  docs:
+    permalink: /:collection/:path/
+    output: true
+  posts:
+    permalink: /blog/:year/:month/:day/:title/
+    output: true
