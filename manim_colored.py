@@ -20,9 +20,10 @@ pp = pprint.PrettyPrinter(indent=2)
 
 class CollatzSparseBits(Scene):
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, seed=85, **kwargs):
         super(CollatzSparseBits, self).__init__(*args, **kwargs)
 
+        self.seed = seed
         self.multibits = {}
         self.color_count = 1
         self.pallette = None
@@ -32,12 +33,11 @@ class CollatzSparseBits(Scene):
         self.unit_width = 1
         self.buffer = 0 #0.1*self.unit_widt
         self.unit_height = 1
-        self.scale_factor = 1
 
 
-    def construct(self, seed: int):
+    def construct(self):
 
-        self.int_2_mobjects(seed)
+        self.int_2_mobjects(self.seed)
 
         while len(self.multibits) > 1:
 
@@ -62,24 +62,27 @@ class CollatzSparseBits(Scene):
 
     def reduce_bit_height(self):
 
-        new_unit_height = self.multibits[self.min_bit][0].get_height()
-
         max_height = self.multibits[self.max_bit][0].get_height()
 
         if config.frame_height - max_height < 4:
 
-          scale_factor /= 2
+          self.unit_height /= 2
 
-        self.play(*[group.animate.stretch_to_fit_height(group.get_height() - new_unit_height + 1.0)
-                      for multistack in self.multibits.values() for group in multistack])
+        self.multibits = {length - self.min_bit + 1: multi_stack  for length, multi_stack in self.multibits.items()}
+        self.max_bit = self.max_bit - self.min_bit + 1
+        self.min_bit = 1
 
-        self.play(*[colored_bit.animate.set_fill(colored_bit.get_color(), opacity=1.0) if int(group.get_height()) % 2 == 1
-              else colored_bit.animate.set_fill(colored_bit.get_color(), opacity=0.0)
-              for multistack in self.multibits.values() for group in multistack for colored_bit in group.submobjects])
+        if self.max_bit > self.min_bit:
+           
+          self.play(*[group.animate.stretch_to_fit_height(length*self.unit_height)
+                        for length, multistack in self.multibits.items() for group in multistack])
+
+          self.play(*[colored_bit.animate.set_fill(colored_bit.get_color(), opacity=1.0) if length % 2 == 1
+                else colored_bit.animate.set_fill(colored_bit.get_color(), opacity=0.0)
+                for length, multistack in self.multibits.items() for group in multistack for colored_bit in group.submobjects])
 
         #self.play(self.display_group.animate.scale(resize_scale))
-        self.multibits = {length - self.min_bit + 1: multi_stack  for length, multi_stack in self.multibits.items()}
-        self.min_bit = 1
+        
 
     def int_2_mobjects(self, seed):
 
@@ -90,6 +93,9 @@ class CollatzSparseBits(Scene):
         multibit_hts = [bit+1 for bit in ba.itersearch(1)]
         self.color_count = len(multibit_hts)
         self.max_bit = max(multibit_hts)
+
+        while config.frame_height - self.max_bit*self.unit_height < 4:
+          self.unit_height /= 2
 
         self.pallette = sb.color_palette(n_colors=self.color_count)
 
@@ -139,10 +145,11 @@ class CollatzSparseBits(Scene):
 
     def double_multibit(self, multibit_group, double_length):
       double_group = multibit_group.copy()
-      old_height = multibit_group.get_height()
-      new_height= old_height*double_length/(double_length-1)
+      #old_height = multibit_group.get_height()
+      #new_height= old_height*double_length/(double_length-1)
+      new_height = double_length*self.unit_height
 
-      opacity = 1.0 if int(new_height) % 2 == 1 else 0.0
+      opacity = 1.0 if int(double_length) % 2 == 1 else 0.0
       double_group.stretch_to_fit_height(new_height)
 
       for colored_bit in double_group.submobjects:
@@ -194,9 +201,14 @@ class CollatzSparseBits(Scene):
 
     def build_tidbit_from_dict(self, tidbit_dict, old_length, old_height, buff=0.) -> VGroup:
 
-      new_height = old_height*(old_length + 1)/old_length
+
+      
+      #new_height = old_height*(old_length + 1)/old_length
+      new_length = old_length + 1
+      new_height = new_length*self.unit_height
+      
       # color from hex
-      opacity = 1.0 if int(new_height) % 2 == 1 else 0.0
+      opacity = 1.0 if int(new_length) % 2 == 1 else 0.0
 
       tidbit_group = VGroup(*[Rectangle(width=self.unit_width, height=pct_ht*new_height, color=hex_to_color(hex))
                       for hex, pct_ht in sorted(tidbit_dict.items(), reverse=True, key=lambda item: item[1])]).arrange(direction=UP, buff=buff)
@@ -289,3 +301,11 @@ class CollatzSparseBits(Scene):
       self.play(self.display_group.animate.move_to(ORIGIN))
 
 
+if __name__ == '__main__':
+   
+  assert len(sys.argv) == 2, 'Usage: python manim_colored [Natural Number]'
+
+  with tempconfig({"quality": "low_quality"}):
+    collatz_scene = CollatzSparseBits(seed = int(sys.argv[1]))
+    collatz_scene.render()
+   
